@@ -39,7 +39,7 @@ python -m venv .venv
 ```
 2. Install dependencies:
 ```bash
-pip install -r automation/requirements.txt
+pip install -r requirements.txt
 python -m playwright install chromium
 ```
 3. Ensure `.env` contains:
