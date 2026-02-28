@@ -50,9 +50,9 @@ IDEN_PASSWORD=your-password
 ```
 4. Run the script:
 ```bash
-python automation/src/iden_extractor.py
+python /src/iden_extractor.py
 ```
 
 ## Output
-- Product data JSON: `automation/data/products.json`
-- Session state file: `automation/state/session.json`
+- Product data JSON: `/data/products.json`
+- Session state file: `/state/session.json`
