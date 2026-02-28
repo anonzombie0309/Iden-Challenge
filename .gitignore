@@ -1,0 +1,11 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Secrets
+.env
+
+# Playwright/session outputs
+automation/state/session.json
+automation/data/products.json
