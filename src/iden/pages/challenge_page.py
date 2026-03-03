@@ -85,7 +85,12 @@ class ChallengePage(BasePage):
         match = re.search(r"Showing\s+(\d+)\s+of\s+(\d+)\s+products", text)
         if not match:
             return {"showing": None, "total": None}
-        return {"showing": int(match.group(1)), "total": int(match.group(2))}
+        showing = int(match.group(1))
+        total = int(match.group(2))
+        # Defensive normalization for occasional UI counter drift.
+        if showing > total:
+            showing = total
+        return {"showing": showing, "total": total}
 
     def extract_all_products(self, max_scroll_rounds: int, idle_rounds_before_stop: int) -> dict[str, object]:
         assert self.page.locator("text=Product Inventory").count() > 0, (
@@ -132,8 +137,9 @@ class ChallengePage(BasePage):
             """() => {
               const cards = Array.from(document.querySelectorAll('main div')).filter((el) => {
                 const h3 = el.querySelector('h3');
-                const p = Array.from(el.querySelectorAll('p')).find((x) => (x.textContent || '').includes('ID:'));
-                return !!h3 && !!p;
+                const p = Array.from(el.querySelectorAll('p')).find((x) => /^ID:\\s*\\d+$/.test((x.textContent || '').trim()));
+                const hasSpecs = el.querySelectorAll('dt').length > 0 && el.querySelectorAll('dd').length > 0;
+                return !!h3 && !!p && hasSpecs;
               });
 
               const seen = new Set();
@@ -144,7 +150,7 @@ class ChallengePage(BasePage):
                 if (!name) continue;
 
                 const category = (card.querySelector('h3 + div')?.textContent || '').trim();
-                const idText = (Array.from(card.querySelectorAll('p')).find((x) => (x.textContent || '').includes('ID:'))?.textContent || '').trim();
+                const idText = (Array.from(card.querySelectorAll('p')).find((x) => /^ID:\\s*\\d+$/.test((x.textContent || '').trim()))?.textContent || '').trim();
                 const idMatch = idText.match(/ID:\\s*(\\d+)/);
                 const id = idMatch ? Number(idMatch[1]) : null;
                 if (id === null || seen.has(id)) continue;
@@ -187,16 +193,17 @@ class ChallengePage(BasePage):
 
         counts = self.read_counts()
         assert isinstance(products, list), "Expected extracted products payload to be a list."
+        showing_last_seen = counts["showing"] if counts["showing"] is not None else len(products)
         self.logger.info(
             "Extraction complete. extracted=%s showing_last_seen=%s total_reported=%s",
             len(products),
-            counts["showing"],
+            showing_last_seen,
             counts["total"],
         )
         return {
             "meta": {
                 "source": self.page.url,
-                "showing_last_seen": counts["showing"],
+                "showing_last_seen": showing_last_seen,
                 "total_reported": counts["total"],
                 "extracted": len(products),
             },
